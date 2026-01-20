@@ -65,6 +65,14 @@ class LinearClassifier(object):
             # replacement is faster than sampling without replacement.              #
             #########################################################################
 
+            # IMPLEMENTATION
+            # Create indices for random batches
+            idx_arr = [i for i in range(num_train)]
+            indicies = np.random.choice(idx_arr, size=batch_size, replace=True)
+
+            # Take batches of X and y within indicies
+            X_batch = X[indicies]
+            y_batch = y[indicies]
 
             # evaluate loss and gradient
             loss, grad = self.loss(X_batch, y_batch, reg)
@@ -75,6 +83,10 @@ class LinearClassifier(object):
             # TODO:                                                                 #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
+
+            # IMPLEMENTATION
+            # Update weights
+            self.W -= learning_rate * grad
 
 
             if verbose and it % 100 == 0:
@@ -101,6 +113,19 @@ class LinearClassifier(object):
         # TODO:                                                                   #
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
+
+        # IMPLEMENTATION
+        # Take the scores vector
+        scores = np.dot(X, self.W)
+
+        # Store predicted labels on y_pred (Unvectorized)
+        # for i in range(X.shape[0]):
+          # Score of the i'th example
+          # idx = np.argmax(scores[i, :])
+          # y_pred[i] = idx
+
+        # Store predicted labels on y_pred (Vectorized)
+        y_pred = np.argmax(scores, axis=1)
 
         return y_pred
 
