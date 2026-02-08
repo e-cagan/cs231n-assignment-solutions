@@ -727,7 +727,17 @@ def softmax_loss(x, y):
     ###########################################################################
     # TODO: Copy over your solution from A1.
     ###########################################################################
+    # Calculate loss
+    shifted = x - np.max(x, axis=1, keepdims=True)
+    exp = np.exp(shifted)
+    probs = exp / np.sum(exp, axis=1, keepdims=True)
+    loss = np.mean(-np.log(probs[np.arange(x.shape[0]), y]))
 
+    # Calculate gradient
+    dscores = probs.copy() # (N, C)
+    dscores[np.arange(x.shape[0]), y] -= 1 # p - one_hot
+    dscores /= x.shape[0]
+    dx = dscores
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

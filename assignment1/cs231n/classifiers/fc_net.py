@@ -54,7 +54,9 @@ class TwoLayerNet(object):
         # and biases using the keys 'W1' and 'b1' and second layer                 #
         # weights and biases using the keys 'W2' and 'b2'.                         #
         ############################################################################
-
+        # Initialize weigths and biases
+        self.params['W1'], self.params['b1'] = weight_scale * np.random.randn(input_dim, hidden_dim), np.zeros(hidden_dim)
+        self.params['W2'], self.params['b2'] = weight_scale * np.random.randn(hidden_dim, num_classes), np.zeros(num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -83,7 +85,11 @@ class TwoLayerNet(object):
         # TODO: Implement the forward pass for the two-layer net, computing the    #
         # class scores for X and storing them in the scores variable.              #
         ############################################################################
+        # First layer
+        hidden, cache1 = affine_relu_forward(X, self.params['W1'], self.params['b1'])
 
+        # Second layer
+        scores, cache2 = affine_forward(hidden, self.params['W2'], self.params['b2'])
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
@@ -103,7 +109,22 @@ class TwoLayerNet(object):
         # automated tests, make sure that your L2 regularization includes a factor #
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
+        W1, W2 = self.params['W1'], self.params['W2']
 
+        # Calculate the loss to start backpropagation
+        data_loss, dscores = softmax_loss(scores, y)
+        loss = data_loss + 0.5 * self.reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
+
+        # First backprop layer
+        dhidden, dW2, db2 = affine_backward(dscores, cache2)
+
+        # Second backprop layer
+        dx, dW1, db1 = affine_relu_backward(dhidden, cache1)
+
+        # Assign gradients for weights and biases
+        grads['W1'], grads['b1'], grads['W2'], grads['b2'] = dW1, db1, dW2, db2
+        grads['W1'] += W1 * self.reg
+        grads['W2'] += W2 * self.reg
         ############################################################################
         #                             END OF YOUR CODE                             #
         ############################################################################
