@@ -194,7 +194,23 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
         # might prove to be helpful.                                          #
         #######################################################################
-        pass
+        # IMPLEMENTATION   
+        # 1. Mini batch mean
+        minibatch_mean = np.mean(x, axis=0)
+
+        # 2. Mini batch variance
+        minibatch_variance = np.mean((x - minibatch_mean)**2, axis=0)
+
+        # 3. Normalization
+        norm = (x - minibatch_mean) / np.sqrt(minibatch_variance + eps)
+
+        # 4. Scale and shift y_i
+        out = gamma * norm + beta
+        cache = (x, minibatch_mean, minibatch_variance, norm, gamma, beta, eps)
+
+        # 5. Update the running mean and variance
+        running_mean = momentum * running_mean + (1 - momentum) * minibatch_mean
+        running_var = momentum * running_var + (1 - momentum) * minibatch_variance
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -205,7 +221,12 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        pass
+        # IMPLEMENTATION
+        # 1. Plug running mean and running variance inside of the normalization
+        x_test = (x - running_mean) / np.sqrt(running_var + eps)
+
+        # 2. Scale and shift y_i
+        out = gamma * x_test + beta
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
@@ -242,7 +263,28 @@ def batchnorm_backward(dout, cache):
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
     ###########################################################################
+    # IMPLEMENTATION
+    # 1. Unpack the variables
+    x, minibatch_mean, minibatch_variance, norm, gamma, beta, eps = cache
+    N, D = x.shape
 
+    # 2. Calculate dbeta
+    dbeta = np.sum(dout, axis=0)
+
+    # 3. Calculate dgamma
+    dgamma = np.sum((dout * norm), axis=0)
+
+    # 4. Calculate dnorm
+    dnorm = dout * gamma
+
+    # 5.1 Calculate dvar
+    dvar = np.sum(dnorm * (x - minibatch_mean) * -0.5 * (minibatch_variance + eps)**(-1.5), axis=0)
+    
+    # 5.2 Calculate dmean
+    dmean = np.sum(dnorm * (-1 / np.sqrt(minibatch_variance + eps)), axis=0) + dvar * np.sum(-2 * (x - minibatch_mean) / N, axis=0)
+
+    # 5.3 Calculate dx
+    dx = (dnorm / np.sqrt(minibatch_variance + eps)) + (dvar * 2 * (x - minibatch_mean) / N) + (dmean / N)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -272,7 +314,22 @@ def batchnorm_backward_alt(dout, cache):
     # should be able to compute gradients with respect to the inputs in a     #
     # single statement; our implementation fits on a single 80-character line.#
     ###########################################################################
+    # IMPLEMENTATION
+    # 1. Unpack the variables
+    x, minibatch_mean, minibatch_variance, norm, gamma, beta, eps = cache
+    N, D = x.shape
 
+    # 2. Calculate dbeta
+    dbeta = np.sum(dout, axis=0)
+
+    # 3. Calculate dgamma
+    dgamma = np.sum((dout * norm), axis=0)
+
+    # 4. Calculate dnorm
+    dnorm = dout * gamma
+
+    # 5. Calculate dx
+    dx = (1 / (N * np.sqrt(minibatch_variance + eps))) * (N * dnorm - np.sum(dnorm, axis=0, keepdims=True) - norm * np.sum(dnorm * norm, axis=0, keepdims=True))
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
