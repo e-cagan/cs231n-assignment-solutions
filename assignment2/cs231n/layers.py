@@ -23,7 +23,9 @@ def affine_forward(x, w, b):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    # Reshape the x and implement the forward propagation formula
+    x_shaped = np.reshape(x, (x.shape[0], -1))
+    out = np.dot(x_shaped, w) + b
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -51,7 +53,16 @@ def affine_backward(dout, cache):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
+    # Reshape the x again
+    x_shaped = np.reshape(x, (x.shape[0], -1))
+    
+    # Calculate the derivatives
+    db = np.sum(dout, axis=0)
+    dw = np.dot(x_shaped.T, dout)
+    dx = np.dot(dout, w.T)
 
+    # Reshape the dx back to original shape of x
+    dx = np.reshape(dx, x.shape)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -72,7 +83,8 @@ def relu_forward(x):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    # Calculate the output
+    out = np.maximum(0, x)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -94,7 +106,8 @@ def relu_backward(dout, cache):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
-
+    # Calculate the dx
+    dx = dout * (x > 0)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -119,7 +132,17 @@ def softmax_loss(x, y):
     ###########################################################################
     # TODO: Copy over your solution from Assignment 1.                        #
     ###########################################################################
+    # Calculate loss
+    shifted = x - np.max(x, axis=1, keepdims=True)
+    exp = np.exp(shifted)
+    probs = exp / np.sum(exp, axis=1, keepdims=True)
+    loss = np.mean(-np.log(probs[np.arange(x.shape[0]), y]))
 
+    # Calculate gradient
+    dscores = probs.copy() # (N, C)
+    dscores[np.arange(x.shape[0]), y] -= 1 # p - one_hot
+    dscores /= x.shape[0]
+    dx = dscores
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
