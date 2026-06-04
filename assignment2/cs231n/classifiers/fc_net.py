@@ -75,11 +75,22 @@ class FullyConnectedNet(object):
         # Input layer
         self.params['W1'] = weight_scale * np.random.randn(input_dim, hidden_dims[0])
         self.params['b1'] = np.zeros(hidden_dims[0])
+
+        # Check for batch normalization for input gamma and beta
+        if self.normalization == "batchnorm":
+            self.params['gamma1'] = np.ones(hidden_dims[0])
+            self.params['beta1'] = np.zeros(hidden_dims[0])
         
         # Hidden layers
         for i in range(1, self.num_layers - 1):
             self.params[f'W{i+1}'] = weight_scale * np.random.randn(hidden_dims[i-1], hidden_dims[i])
             self.params[f'b{i+1}'] = np.zeros(hidden_dims[i])
+
+            # Check for batch normalization
+            if self.normalization == "batchnorm":
+              # Add gamma and beta to hidden layers
+              self.params[f'gamma{i+1}'] = np.ones(hidden_dims[i])
+              self.params[f'beta{i+1}'] = np.zeros(hidden_dims[i])
 
         # Output layer
         self.params[f'W{self.num_layers}'] = weight_scale * np.random.randn(hidden_dims[-1], num_classes)
@@ -158,7 +169,11 @@ class FullyConnectedNet(object):
         
         # Hidden layers (affine - relu)
         for i in range(1, self.num_layers):
-            out, cache = affine_relu_forward(out, self.params[f'W{i}'], self.params[f'b{i}'])
+            # Check for batch normalization
+            if self.normalization == "batchnorm":
+              out, cache = affine_batchnorm_relu_forward(out, self.params[f'W{i}'], self.params[f'b{i}'], self.params[f'gamma{i}'], self.params[f'beta{i}'], self.bn_params[i-1])
+            else:
+              out, cache = affine_relu_forward(out, self.params[f'W{i}'], self.params[f'b{i}'])
             caches[f'c{i}'] = cache
         
         # Output layer (affine)
@@ -202,6 +217,9 @@ class FullyConnectedNet(object):
 
         # Downstream gradients - hidden layers
         for i in range(self.num_layers - 1, 0, -1):
+          if self.normalization == "batchnorm":
+            dout, grads[f'W{i}'], grads[f'b{i}'], grads[f'gamma{i}'], grads[f'beta{i}'] = affine_batchnorm_relu_backward(dout, caches[f'c{i}'])
+          else:
             dout, grads[f'W{i}'], grads[f'b{i}'] = affine_relu_backward(dout, caches[f'c{i}'])
             grads[f'W{i}'] += self.reg * self.params[f'W{i}']
         ############################################################################
