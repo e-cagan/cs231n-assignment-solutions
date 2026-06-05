@@ -393,7 +393,22 @@ def layernorm_forward(x, gamma, beta, ln_param):
     # transformations you could perform, that would enable you to copy over   #
     # the batch norm code and leave it almost unchanged?                      #
     ###########################################################################
+    # IMPLEMENTATION
+    # 1. Unpack the shape of input
+    N, D = x.shape
 
+    # 2. Calculate the mean
+    mean = np.mean(x, axis=1, keepdims=True)
+
+    # 3. Calculate the variance
+    var = np.mean(((x - mean)**2), axis=1, keepdims=True)
+
+    # 4. Calculate the normalization
+    norm = (x - mean) / np.sqrt(var + eps)
+
+    # 5. Calculate the output and store the obtained values in cache
+    out = gamma * norm + beta
+    cache = (x, mean, var, norm, gamma, beta, eps)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -423,7 +438,28 @@ def layernorm_backward(dout, cache):
     # implementation of batch normalization. The hints to the forward pass    #
     # still apply!                                                            #
     ###########################################################################
+    # IMPLEMENTATION
+    # 1. Unpack the input and cache
+    x, minibatch_mean, minibatch_variance, norm, gamma, beta, eps = cache
+    N, D = x.shape
 
+    # 2. Derive dbeta
+    dbeta = np.sum(dout, axis=0)
+
+    # 3. Derive dgamma
+    dgamma = np.sum((dout * norm), axis=0)
+
+    # 4. Derive dnorm
+    dnorm = dout * gamma
+
+    # 5.1 Derive dvar
+    dvar = np.sum(dnorm * (x - minibatch_mean) * -0.5 * (minibatch_variance + eps)**(-1.5), axis=1, keepdims=True)
+    
+    # 5.2 Derive dmean
+    dmean = np.sum(dnorm * (-1 / np.sqrt(minibatch_variance + eps)), axis=1, keepdims=True) + dvar * np.sum(-2 * (x - minibatch_mean) / D, axis=1, keepdims=True)
+
+    # 5.3 Derive dx
+    dx = (dnorm / np.sqrt(minibatch_variance + eps)) + (dvar * 2 * (x - minibatch_mean) / D) + (dmean / D)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
